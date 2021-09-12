@@ -5,9 +5,10 @@ const connectDB = require("./connectToDB");
 const Product = require("./models/ProductModel");
 const Sale = require("./models/SalesModel");
 const bodyParser = require("body-parser");
-// const socketIo = require("socket.io");
 var path = require("path");
+
 const app = express();
+
 app.use(express.static(path.join(__dirname, "/frontend/build")));
 app.use(cors({ credentials: true, origin: "*" }));
 app.use(bodyParser.json());
@@ -55,45 +56,35 @@ app.get("/api/stats", async (req, res) => {
       }
     });
   });
+
+  const getTop5 = (objType) => {
+    let objTypeArr = Object.entries(objType).sort((a, b) => a[1] - b[1]);
+    let result = objTypeArr
+      .slice(-5)
+      .map((item) => {
+        let product = products.find(
+          (product) => product._id.toString() === item[0]
+        );
+        return {
+          [product ? product.name : `${item[0]} ,(deleted product) `]: item[1],
+        };
+      })
+      .reverse();
+
+    return result;
+  };
+
   // top 5 sold
 
-  let x = Object.entries(top5sold).sort((a, b) => a[1] - b[1]);
-  let y = x
-    .slice(-5)
-    .map((item) => {
-      let product = products.find(
-        (product) => product._id.toString() === item[0]
-      );
-      return {
-        [product ? product.name : `${item[0]} ,(deleted product) `]: item[1],
-      };
-    })
-    .reverse();
+  // let x = Object.entries(top5sold).sort((a, b) => a[1] - b[1]);
+  let y = getTop5(top5sold);
 
   //unique sales
 
-  let q = Object.entries(uniquieSales).sort((a, b) => a[1] - b[1]);
-  let z = q
-    .slice(-5)
-    .map((item) => {
-      let product = products.find(
-        (product) => product._id.toString() === item[0]
-      );
-      return {
-        [product ? product.name : `${item[0]} ,(deleted product) `]: item[1],
-      };
-    })
-    .reverse();
-
-  // console.log("y:", y);
-  // console.log("unique:", z);
-  // console.log("sumByDate:", sumByDate);
+  // let q = Object.entries(uniquieSales).sort((a, b) => a[1] - b[1]);
+  let z = getTop5(uniquieSales);
 
   res.status(200).send({ top5sold: y, unique: z, sumByDate });
-
-  //1. top 5 products sold
-  //2. top 5 unique sales (products that have been ordered more than 1 time (amount > 1) )
-  //3. price summary of last 5 days
 });
 
 app.post("/api/payment", async (req, res) => {
@@ -138,7 +129,7 @@ app.post("/add_product", async (req, res) => {
   res.send(products);
 });
 
-const port = process.env.PORT || 8000;
+const port = 3333;
 app.listen(port, () => {
   console.log(`server is listening on port ${port}`);
 });
